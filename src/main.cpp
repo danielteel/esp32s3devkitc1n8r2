@@ -38,11 +38,11 @@ void loop(){
         Serial.println("Trying to connect to WiFi...");
         delay(500);
     }else{
-        if (isTimeToExecute(lastPrintTime, 100)){
+        if (isTimeToExecute(lastPrintTime, 1000)){
             Serial.println(millis());
             
-            uint32_t rand = 0;//esp_random();
-            neopixelWrite(RGB_BUILTIN, rand&0xFF, (rand>>8) & 0xFF, (rand>>16) & 0xFF);
+            uint32_t rand = esp_random();
+            neopixelWrite(RGB_BUILTIN, (rand&0xFF) >> 3, ((rand>>8) & 0xFF) >> 3, ((rand>>16) & 0xFF) >> 3);
         }
     }
 }
