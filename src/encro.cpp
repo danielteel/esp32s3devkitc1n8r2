@@ -67,18 +67,10 @@ uint8_t* deframe(const uint8_t* data, uint32_t framedLength, uint32_t& dataLengt
 }
 
 
-uint8_t* encrypt(uint32_t handshake, const uint8_t* data, uint32_t dataLength, uint32_t& encryptedLength, const char* keyString) {
+uint8_t* encrypt(uint32_t handshake, const uint8_t* data, uint32_t dataLength, uint32_t& encryptedLength, const uint8_t* key) {
     uint8_t* buffer = frame(handshake, data, dataLength, encryptedLength);
     if (!buffer){
         return nullptr;
-    }
-
-    uint8_t key[32];
-    char tempHex[] = { 0,0,0 };
-    for (uint8_t i = 0; i < 64; i += 2) {
-        tempHex[0] = keyString[i];
-        tempHex[1] = keyString[i + 1];
-        key[i >> 1] = strtoul(tempHex, nullptr, 16);
     }
 
     for (uint8_t k = 0; k < 32; k++) {
@@ -119,15 +111,9 @@ uint8_t* encrypt(uint32_t handshake, const uint8_t* data, uint32_t dataLength, u
 }
 
 
-uint8_t* decrypt(uint32_t& handshake, const uint8_t* data, uint32_t dataLength, uint32_t& decryptedLength, const char* keyString, bool& error) {
+uint8_t* decrypt(uint32_t& handshake, const uint8_t* data, uint32_t dataLength, uint32_t& decryptedLength, const uint8_t* key, bool& error) {
     error=false;
-    uint8_t key[32];
-    char tempHex[] = { 0,0,0 };
-    for (uint8_t i = 0; i < 64; i += 2) {
-        tempHex[0] = keyString[i];
-        tempHex[1] = keyString[i + 1];
-        key[i >> 1] = strtoul(tempHex, nullptr, 16);
-    }
+
     uint8_t* buffer = new uint8_t[dataLength];
     memmove(buffer, data, dataLength);
     for (uint8_t k = 31; k >= 0 && k != 0xFF; k--) {

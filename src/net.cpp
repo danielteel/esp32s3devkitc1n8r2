@@ -1,6 +1,31 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <Esp.h>
+#include "encro.h"
+#include "net.h"
+#include "utils.h"
+
+
+Net::Net(String address, uint16_t port){
+    this->hostAddress=address;
+    this->port=port;
+}
+
+void Net::attemptToConnect(){
+    if (!this->Client.connected()){
+        if (isTimeToExecute(this->lastConnectAttempt, connectAttemptInterval)){
+            if (this->Client.connect(this->hostAddress.c_str(), this->port)){
+                //TODO: Connection was successful, send initial handshake and wait for reply before setting "can talk now flag"
+            }
+        }
+    }
+}
+
+void Net::loop(){
+    this->attemptToConnect();
+}
+
+WiFiClient Client;
 
 uint32_t handshakeNumber=0;
 uint32_t serverHandshakeNumber=0;
@@ -8,6 +33,20 @@ uint32_t serverHandshakeNumber=0;
 const uint8_t packetMagicBytes[]={73, 31};
 const uint8_t handshakeMagicBytes[]={13, 37};
 
+
+const char* deviceName = "Solar";
+const char* encroKeyString = "";
+const char* handshakeMessage="Lights Off:void:0,Lights On:void:1,Auto:void:2";
+uint8_t encryptionKey[32];
+
+void buildKey(const char* keyString, uint8_t* key){
+    char tempHex[] = { 0,0,0 };
+    for (uint8_t i = 0; i < 64; i += 2) {
+        tempHex[0] = keyString[i];
+        tempHex[1] = keyString[i + 1];
+        key[i >> 1] = strtoul(tempHex, nullptr, 16);
+    }
+}
 void onPacket(uint8_t* data, uint32_t dataLength){
     //process data here
     //e.g. if (data[0]==0xF) { digitalWrite(14, HIGH); }
@@ -17,11 +56,11 @@ void sendInitialHandshake(){
     uint32_t encryptedLength;
     uint8_t* encrypted=encrypt(handshakeNumber, (uint8_t*)handshakeMessage, strlen(handshakeMessage), encryptedLength, encroKey);
     if (encrypted){
-        Messaging.write(handshakeMagicBytes, 2);
-        Messaging.write((uint8_t) strlen(deviceName));
-        Messaging.write(deviceName);
-        Messaging.write((uint8_t*)&encryptedLength, 4);
-        Messaging.write(encrypted, encryptedLength);
+        Client.write(handshakeMagicBytes, 2);
+        Client.write((uint8_t) strlen(deviceName));
+        Client.write(deviceName);
+        Client.write((uint8_t*)&encryptedLength, 4);
+        Client.write(encrypted, encryptedLength);
         delete[] encrypted;
     }else{
         Serial.println("failed to encrypt in sendInitialHandshake()");
@@ -32,9 +71,9 @@ void sendPacket(const void* data, uint32_t dataLength){
     uint32_t encryptedLength;
     uint8_t* encrypted=encrypt(handshakeNumber, (const uint8_t*)data, dataLength, encryptedLength, encroKey);
     if (encrypted){
-        Messaging.write(packetMagicBytes, 2);
-        Messaging.write((uint8_t*)&encryptedLength, 4);
-        Messaging.write(encrypted, encryptedLength);
+        Client.write(packetMagicBytes, 2);
+        Client.write((uint8_t*)&encryptedLength, 4);
+        Client.write(encrypted, encryptedLength);
         Serial.print("Sent message with handshake ");
         Serial.println(handshakeNumber);
         delete[] encrypted;
@@ -82,7 +121,7 @@ void onError(const char* errorMsg){
     }else{
         Serial.println("Error occured");
     }
-    Messaging.stop();
+    Client.stop();
 }
 
 void dataRecieved(uint8_t byte){
