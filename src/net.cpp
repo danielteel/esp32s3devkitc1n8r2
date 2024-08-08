@@ -5,16 +5,37 @@
 #include "net.h"
 #include "utils.h"
 
+const uint8_t packetMagicBytes[]={73, 31};
+const uint8_t handshakeMagicBytes[]={13, 37};
 
-Net::Net(String address, uint16_t port){
+Net::Net(String deviceName, String encroKey, String address, uint16_t port){
+    this->deviceName=deviceName;
     this->hostAddress=address;
     this->port=port;
+
+    buildKey(encroKey.c_str(), this->encroKey);
 }
 
 void Net::attemptToConnect(){
     if (!this->Client.connected()){
         if (isTimeToExecute(this->lastConnectAttempt, connectAttemptInterval)){
             if (this->Client.connect(this->hostAddress.c_str(), this->port)){
+                this->clientsHandshake=esp_random() ^ esp_random();
+                
+                this->netStatus=NETSTATUS::NOTHING;
+
+                uint32_t encryptedLength;
+                uint8_t* encrypted=encrypt(this->clientsHandshake, nullptr, 0, encryptedLength, this->encroKey);
+                if (encrypted){
+                    this->Client.write((uint8_t)this->deviceName.length());
+                    this->Client.write(this->deviceName.c_str());
+                    this->Client.write(encrypted, encryptedLength);
+
+                    this->netStatus=NETSTATUS::INITIAL_SENT;
+                }else{
+                    this->Client.stop();
+                }
+
                 //TODO: Connection was successful, send initial handshake and wait for reply before setting "can talk now flag"
             }
         }
@@ -30,8 +51,6 @@ WiFiClient Client;
 uint32_t handshakeNumber=0;
 uint32_t serverHandshakeNumber=0;
 
-const uint8_t packetMagicBytes[]={73, 31};
-const uint8_t handshakeMagicBytes[]={13, 37};
 
 
 const char* deviceName = "Solar";

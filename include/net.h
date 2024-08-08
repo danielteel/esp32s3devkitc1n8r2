@@ -1,9 +1,16 @@
 #pragma once
 #include <WiFi.h>
 
+enum NETSTATUS {
+    NOTHING,
+    INITIAL_SENT,
+    INITIAL_RECVD,
+    READY
+}
+
 class Net {
     public:
-        Net(String address, uint16_t port);
+        Net(String deviceName, String encroKey, String address, uint16_t port);
 
         void loop();
 
@@ -23,12 +30,15 @@ class Net {
 
     private:
         WiFiClient Client;
+        String deviceName;
+        uint8_t encroKey[32];
         String hostAddress;
         uint16_t port;
 
         uint32_t clientsHandshake;
         uint32_t serversHandshake;
 
+        NETSTATUS netStatus;
 
 
         void (*published)(String name, String payload)=nullptr;
