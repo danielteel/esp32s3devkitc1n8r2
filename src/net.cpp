@@ -44,6 +44,12 @@ void Net::attemptToConnect(){
 
 void Net::loop(){
     this->attemptToConnect();
+    if (this->Client.connected()){
+        int bytesAvailable = this->Client.available();
+        if (bytesAvailable){
+            
+        }
+    }
 }
 
 WiFiClient Client;
