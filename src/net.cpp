@@ -18,11 +18,11 @@ Net::Net(String deviceName, String encroKey, String address, uint16_t port){
 
 void Net::attemptToConnect(){
     if (!this->Client.connected()){
+        
+        this->netStatus=NETSTATUS::NOTHING;
         if (isTimeToExecute(this->lastConnectAttempt, connectAttemptInterval)){
             if (this->Client.connect(this->hostAddress.c_str(), this->port)){
                 this->clientsHandshake=esp_random() ^ esp_random();
-                
-                this->netStatus=NETSTATUS::NOTHING;
 
                 uint32_t encryptedLength;
                 uint8_t* encrypted=encrypt(this->clientsHandshake, nullptr, 0, encryptedLength, this->encroKey);
