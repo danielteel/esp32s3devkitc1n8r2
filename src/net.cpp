@@ -20,6 +20,7 @@ void Net::attemptToConnect(){
     if (!this->Client.connected()){
         
         this->netStatus=NETSTATUS::NOTHING;
+        this->recvState=RECVSTATE::LEN1;
         if (isTimeToExecute(this->lastConnectAttempt, connectAttemptInterval)){
             if (this->Client.connect(this->hostAddress.c_str(), this->port)){
                 this->clientsHandshake=esp_random() ^ esp_random();
@@ -42,12 +43,32 @@ void Net::attemptToConnect(){
     }
 }
 
+void Net::byteReceived(uint8_t data){
+    switch (this->recvState){
+        case RECVSTATE::LEN1:
+            this->packetLength=data;
+            packetState=PACKETWRITESTATE::LEN2;
+            break;
+        case RECVSTATE::LEN2:
+            this->packetLength|=(data<<8);
+            break;
+        case RECVSTATE::LEN3:
+            this->packetLength|=(data<<16);
+            break;
+        case RECVSTATE::LEN4:
+            this->packetLength|=(data<<24);
+            break;
+        case RECVSTATE::PAYLOAD:
+            break;
+    }
+}
+
 void Net::loop(){
     this->attemptToConnect();
     if (this->Client.connected()){
         int bytesAvailable = this->Client.available();
         if (bytesAvailable){
-            
+            this->byteReceived(this->Client.read());
         }
     }
 }

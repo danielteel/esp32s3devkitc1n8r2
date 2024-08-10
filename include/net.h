@@ -6,7 +6,15 @@ enum NETSTATUS {
     INITIAL_SENT,
     INITIAL_RECVD,
     READY
-}
+};
+
+enum RECVSTATE {
+    LEN1,
+    LEN2,
+    LEN3,
+    LEN4,
+    PAYLOAD
+};
 
 class Net {
     public:
@@ -39,7 +47,9 @@ class Net {
         uint32_t serversHandshake;
 
         NETSTATUS netStatus;
-
+        RECVSTATE recvState;
+        uint32_t packetLength;
+        uint8_t* packetPayload=nullptr;
 
         void (*published)(String name, String payload)=nullptr;
         //void (*messaged)(String name, String payload)=nullptr;
@@ -49,4 +59,7 @@ class Net {
         const uint32_t connectAttemptInterval=2000;
         uint32_t lastConnectAttempt=0;
         void attemptToConnect();
+        void byteReceived(uint8_t data);
+
+
 };
