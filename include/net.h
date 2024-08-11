@@ -50,6 +50,7 @@ class Net {
         RECVSTATE recvState;
         uint32_t packetLength;
         uint8_t* packetPayload=nullptr;
+        uint32_t payloadRecvdCount=0;
 
         void (*published)(String name, String payload)=nullptr;
         //void (*messaged)(String name, String payload)=nullptr;

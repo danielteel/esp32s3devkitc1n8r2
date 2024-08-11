@@ -44,21 +44,49 @@ void Net::attemptToConnect(){
 }
 
 void Net::byteReceived(uint8_t data){
-    switch (this->recvState){
+    switch (recvState){
         case RECVSTATE::LEN1:
-            this->packetLength=data;
+            packetLength=data;
             packetState=PACKETWRITESTATE::LEN2;
             break;
         case RECVSTATE::LEN2:
-            this->packetLength|=(data<<8);
+            packetLength|=(data<<8);
+            packetState=PACKETWRITESTATE::LEN3;
             break;
         case RECVSTATE::LEN3:
-            this->packetLength|=(data<<16);
+            packetLength|=(data<<16);
+            packetState=PACKETWRITESTATE::LEN4;
             break;
         case RECVSTATE::LEN4:
-            this->packetLength|=(data<<24);
+            packetLength|=(data<<24);
+            payloadRecvdCount=0;
+            if (packetPayload){
+                free(packetPayload);
+                packetPayload=nullptr;
+            }
+            if (packetLength==0){
+                packetState=PACKETWRITESTATE::LEN1;
+            }else{
+                packetState=PACKETWRITESTATE::PAYLOAD;
+                packetPayload=(uint8_t*)malloc(packetLength);
+            }
             break;
         case RECVSTATE::PAYLOAD:
+            packetPayload[payloadRecvdCount]=data;
+            payloadRecvdCount++;
+            if (payloadRecvdCount>=packetLength){
+                packetState=PACKETWRITESTATE::LEN1;
+                uint32_t recvdHandshake=0;
+                uint32_t decryptedLength=0;
+                bool errorOccurred=false;
+                uint8_t* plainText=decrypt(recvdHandshake, packetPayload, packetLength, decryptedLength, encroKey, errorOccurred);
+                free(packetPayload);
+                //Full packet recieved, send it off for processing
+                //packetRecieved(plainText, decryptedLength)
+                delete[] plainText;
+                plainText=nullptr;
+                packetPayload=nullptr;
+            }
             break;
     }
 }
