@@ -25,21 +25,34 @@ void Net::attemptToConnect(){
             if (this->Client.connect(this->hostAddress.c_str(), this->port)){
                 this->clientsHandshake=esp_random() ^ esp_random();
 
-                uint32_t encryptedLength;
-                uint8_t* encrypted=encrypt(this->clientsHandshake, nullptr, 0, encryptedLength, this->encroKey);
-                if (encrypted){
-                    this->Client.write((uint8_t)this->deviceName.length());
-                    this->Client.write(this->deviceName.c_str());
-                    this->Client.write(encrypted, encryptedLength);
-
+                this->Client.write((uint8_t)this->deviceName.length());
+                this->Client.write(this->deviceName.c_str());
+                if (sendPacket(nullptr, 0)){
                     this->netStatus=NETSTATUS::INITIAL_SENT;
                 }else{
                     this->Client.stop();
                 }
-
-                //TODO: Connection was successful, send initial handshake and wait for reply before setting "can talk now flag"
             }
         }
+    }
+}
+
+bool Net::sendPacket(uint8_t* data, uint32_t dataLength){
+    uint32_t encryptedLength;
+    uint8_t* encrypted=encrypt(this->clientsHandshake, data, dataLength, encryptedLength, this->encroKey);
+    this->clientsHandshake++;
+    if (encrypted){
+        this->Client.write(encrypted, encryptedLength);
+        return true;
+    }
+    return false;
+}
+
+void Net::packetRecieved(uint32_t recvdHandshake, uint8_t* data, uint32_t dataLength){
+    switch (netStatus){
+        case NETSTATUS::INITIAL_SENT:
+            serverHandshakeNumber=recvdHandshake+1;
+            break;
     }
 }
 
@@ -82,7 +95,7 @@ void Net::byteReceived(uint8_t data){
                 uint8_t* plainText=decrypt(recvdHandshake, packetPayload, packetLength, decryptedLength, encroKey, errorOccurred);
                 free(packetPayload);
                 //Full packet recieved, send it off for processing
-                //packetRecieved(plainText, decryptedLength)
+                packetRecieved(recvdHandshake, plainText, decryptedLength);
                 delete[] plainText;
                 plainText=nullptr;
                 packetPayload=nullptr;

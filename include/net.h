@@ -60,7 +60,9 @@ class Net {
         const uint32_t connectAttemptInterval=2000;
         uint32_t lastConnectAttempt=0;
         void attemptToConnect();
+        bool sendPacket(uint8_t* data, uint32_t dataLength);
         void byteReceived(uint8_t data);
+        void packetRecieved(uint32_t recvdHandshake, uint8_t* data, uint32_t dataLength);
 
 
 };
