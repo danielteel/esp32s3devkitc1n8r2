@@ -19,7 +19,7 @@ enum RECVSTATE {
 class Net {
     public:
         Net(String deviceName, String encroKey, String address, uint16_t port);
-
+        ~Net();
         void loop();
 
         void subscribe(String name);
@@ -63,6 +63,6 @@ class Net {
         bool sendPacket(uint8_t* data, uint32_t dataLength);
         void byteReceived(uint8_t data);
         void packetRecieved(uint32_t recvdHandshake, uint8_t* data, uint32_t dataLength);
-
+        void processIncoming();
 
 };

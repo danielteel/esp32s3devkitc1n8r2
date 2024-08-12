@@ -5,8 +5,6 @@
 #include "net.h"
 #include "utils.h"
 
-const uint8_t packetMagicBytes[]={73, 31};
-const uint8_t handshakeMagicBytes[]={13, 37};
 
 Net::Net(String deviceName, String encroKey, String address, uint16_t port){
     this->deviceName=deviceName;
@@ -16,6 +14,15 @@ Net::Net(String deviceName, String encroKey, String address, uint16_t port){
     buildKey(encroKey.c_str(), this->encroKey);
 }
 
+Net::~Net(){
+    Client.stop();
+
+    if (packetPayload){
+        free(packetPayload);
+        packetPayload=nullptr;
+    }
+}
+
 void Net::attemptToConnect(){
     if (!this->Client.connected()){
         
@@ -23,7 +30,7 @@ void Net::attemptToConnect(){
         this->recvState=RECVSTATE::LEN1;
         if (isTimeToExecute(this->lastConnectAttempt, connectAttemptInterval)){
             if (this->Client.connect(this->hostAddress.c_str(), this->port)){
-                this->clientsHandshake=esp_random() ^ esp_random();
+                this->clientsHandshake=esp_random();
 
                 this->Client.write((uint8_t)this->deviceName.length());
                 this->Client.write(this->deviceName.c_str());
@@ -52,6 +59,7 @@ void Net::packetRecieved(uint32_t recvdHandshake, uint8_t* data, uint32_t dataLe
     switch (netStatus){
         case NETSTATUS::INITIAL_SENT:
             serverHandshakeNumber=recvdHandshake+1;
+            netStatus=NETSTATUS::INITIAL_RECVD;
             break;
     }
 }
@@ -94,24 +102,33 @@ void Net::byteReceived(uint8_t data){
                 bool errorOccurred=false;
                 uint8_t* plainText=decrypt(recvdHandshake, packetPayload, packetLength, decryptedLength, encroKey, errorOccurred);
                 free(packetPayload);
-                //Full packet recieved, send it off for processing
-                packetRecieved(recvdHandshake, plainText, decryptedLength);
-                delete[] plainText;
-                plainText=nullptr;
                 packetPayload=nullptr;
+
+                if (errorOccurred){
+                    Client.stop();
+                    netStatus=NETSTATUS::NOTHING;
+                }else{
+                    packetRecieved(recvdHandshake, plainText, decryptedLength);
+                }
+
+                if (plainText) delete[] plainText;
+                plainText=nullptr;
             }
             break;
     }
 }
 
-void Net::loop(){
-    this->attemptToConnect();
+void Net::processIncoming(){
     if (this->Client.connected()){
-        int bytesAvailable = this->Client.available();
-        if (bytesAvailable){
+        while (Client.available()>0){
             this->byteReceived(this->Client.read());
         }
     }
+}
+
+void Net::loop(){
+    this->attemptToConnect();
+    this->processIncoming();
 }
 
 WiFiClient Client;
