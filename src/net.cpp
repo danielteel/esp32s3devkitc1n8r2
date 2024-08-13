@@ -21,6 +21,16 @@ Net::~Net(){
         free(packetPayload);
         packetPayload=nullptr;
     }
+    
+	for(int i = 0; i < subscribedList.size(); i++){
+		String* string = subscribedList.get(i);
+        delete string;
+    }
+    subscribedList.clear();
+}
+
+void Net::subscribe(String name){
+    subscribedList.add(new String(name));
 }
 
 void Net::attemptToConnect(){

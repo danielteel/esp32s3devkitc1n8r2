@@ -1,5 +1,6 @@
 #pragma once
 #include <WiFi.h>
+#include "LinkedList.h"
 
 enum NETSTATUS {
     NOTHING,
@@ -15,6 +16,7 @@ enum RECVSTATE {
     LEN4,
     PAYLOAD
 };
+
 
 class Net {
     public:
@@ -52,9 +54,10 @@ class Net {
         uint8_t* packetPayload=nullptr;
         uint32_t payloadRecvdCount=0;
 
+        LinkedList<String*> subscribedList;
+
         void (*published)(String name, String payload)=nullptr;
         //void (*messaged)(String name, String payload)=nullptr;
-
 
     private:
         const uint32_t connectAttemptInterval=2000;
