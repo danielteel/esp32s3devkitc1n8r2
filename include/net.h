@@ -62,6 +62,7 @@ class Net {
     private:
         const uint32_t connectAttemptInterval=2000;
         uint32_t lastConnectAttempt=0;
+        void errorOccured(String errorText);
         void attemptToConnect();
         bool sendPacket(uint8_t* data, uint32_t dataLength);
         void byteReceived(uint8_t data);

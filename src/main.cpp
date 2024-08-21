@@ -3,10 +3,13 @@
 #include <Esp.h>
 #include "utils.h"
 #include "secrets.h"
+#include "net.h"
 
 
 const char *WiFiSSID = SECRET_WIFI_SSID;
 const char *WiFiPass = SECRET_WIFI_PASS;
+
+Net NetClient("device1", "", "192.168.1.14", 4004);
 
 void setup(){
     Serial.begin(115200);
@@ -33,4 +36,6 @@ void loop(){
             Serial.println(millis());
         }
     }
+
+    NetClient.loop();
 }
