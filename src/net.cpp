@@ -21,17 +21,8 @@ Net::~Net(){
         free(packetPayload);
         packetPayload=nullptr;
     }
-    
-	for(int i = 0; i < subscribedList.size(); i++){
-		String* string = subscribedList.get(i);
-        delete string;
-    }
-    subscribedList.clear();
 }
 
-void Net::subscribe(String name){
-    subscribedList.add(new String(name));
-}
 
 void Net::errorOccured(String errorText){
     Client.stop();
@@ -66,8 +57,16 @@ void Net::attemptToConnect(){
     }
 }
 
-void Net::sendString(String str){
-    sendPacket((uint8_t*)str.c_str(), str.length());
+bool Net::sendString(String str){
+    return sendPacket((uint8_t*)str.c_str(), str.length());
+}
+
+bool Net::sendBinary(uint8_t* data, uint32_t dataLength){
+    return sendPacket(data, dataLength);
+}
+
+bool Net::connected(){
+    return netStatus==NETSTATUS::READY;
 }
 
 bool Net::sendPacket(uint8_t* data, uint32_t dataLength){

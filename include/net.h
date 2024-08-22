@@ -23,23 +23,11 @@ class Net {
         ~Net();
         void loop();
 
-        void sendString(String str);
+        bool sendString(String str);
+        bool sendBinary(uint8_t* data, uint32_t dataLen);
+        
+        bool connected();
 
-        void subscribe(String name);
-        void unsubscribe(String name);
-
-        void publish(String name, String payload);
-        void unpublish(String name);
-
-        // void require(String name);
-        // void unrequire(String name);
-        // void update(String name, String payload);
-
-        // void listen(String name);
-        // void unlisten(String name);
-        // void message(String name, String payload);
-
-        NETSTATUS netStatus;
     private:
         WiFiClient Client;
         String deviceName;
@@ -50,16 +38,13 @@ class Net {
         uint32_t clientsHandshake;
         uint32_t serversHandshake;
 
-        //NETSTATUS netStatus;
+        NETSTATUS netStatus;
         RECVSTATE recvState;
         uint32_t packetLength;
         uint8_t* packetPayload=nullptr;
         uint32_t payloadRecvdCount=0;
 
-        LinkedList<String*> subscribedList;
-
         void (*published)(String name, String payload)=nullptr;
-        //void (*messaged)(String name, String payload)=nullptr;
 
     private:
         const uint32_t connectAttemptInterval=2000;

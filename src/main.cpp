@@ -22,6 +22,7 @@ void setup(){
 void loop(){
     static uint32_t lastPrintTime = 0;
     static uint32_t lastSendTime=0;
+    static uint32_t sendCount=0;
 
     if (WiFi.status() != WL_CONNECTED){//Reconnect to WiFi
         if (WiFi.status() == WL_CONNECT_FAILED){
@@ -34,10 +35,11 @@ void loop(){
     }else{
 
         NetClient.loop();
-        if (NetClient.netStatus==NETSTATUS::READY && isTimeToExecute(lastSendTime, 1000)){
-            String msg = "ms: ";
-            msg+=millis();
+        if (NetClient.connected() && isTimeToExecute(lastSendTime, 1000)){
+            String msg = "count: ";
+            msg+=sendCount;
             NetClient.sendString(msg);
+            sendCount++;
         }
     }
 
