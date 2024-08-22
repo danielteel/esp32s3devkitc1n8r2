@@ -5,7 +5,6 @@
 enum NETSTATUS {
     NOTHING,
     INITIAL_SENT,
-    INITIAL_RECVD,
     READY
 };
 
@@ -24,6 +23,8 @@ class Net {
         ~Net();
         void loop();
 
+        void sendString(String str);
+
         void subscribe(String name);
         void unsubscribe(String name);
 
@@ -38,6 +39,7 @@ class Net {
         // void unlisten(String name);
         // void message(String name, String payload);
 
+        NETSTATUS netStatus;
     private:
         WiFiClient Client;
         String deviceName;
@@ -48,7 +50,7 @@ class Net {
         uint32_t clientsHandshake;
         uint32_t serversHandshake;
 
-        NETSTATUS netStatus;
+        //NETSTATUS netStatus;
         RECVSTATE recvState;
         uint32_t packetLength;
         uint8_t* packetPayload=nullptr;

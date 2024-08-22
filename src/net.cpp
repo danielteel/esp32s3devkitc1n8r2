@@ -66,12 +66,18 @@ void Net::attemptToConnect(){
     }
 }
 
+void Net::sendString(String str){
+    sendPacket((uint8_t*)str.c_str(), str.length());
+}
+
 bool Net::sendPacket(uint8_t* data, uint32_t dataLength){
     uint32_t encryptedLength;
     uint8_t* encrypted=encrypt(this->clientsHandshake, data, dataLength, encryptedLength, this->encroKey);
     this->clientsHandshake++;
     if (encrypted){
+        this->Client.write((uint8_t*)&encryptedLength, 4);
         this->Client.write(encrypted, encryptedLength);
+        this->Client.flush();
         return true;
     }
     return false;
@@ -80,25 +86,20 @@ bool Net::sendPacket(uint8_t* data, uint32_t dataLength){
 void Net::packetRecieved(uint32_t recvdHandshake, uint8_t* data, uint32_t dataLength){
     if (netStatus==NETSTATUS::INITIAL_SENT){
             serversHandshake=recvdHandshake+1;
-            netStatus=NETSTATUS::INITIAL_RECVD;
-    }else{
-        if (recvdHandshake!=serversHandshake){
+            netStatus=NETSTATUS::READY;
+    }else if (netStatus==NETSTATUS::READY){
+        if (recvdHandshake==serversHandshake){
+            serversHandshake++;
+        }else{
             //throw error, wrong handshake from expected
             String errorText="Wrong handshake, expected ";
-            errorText+=serversHandshake+" but recvd "+recvdHandshake;
+            errorText+=String(serversHandshake)+" but recvd "+String(recvdHandshake);
+
             errorOccured(errorText);
             return;
-        }else{
-            serversHandshake++;
         }
-        
-        if (netStatus==NETSTATUS::INITIAL_RECVD){
-            //Send initial data
-        }else if (netStatus==NETSTATUS::READY){
-            //Data recieved
-        }else{
+    }else{
             errorOccured("Unknown netStatus");
-        }
     }
 }
 
@@ -143,8 +144,7 @@ void Net::byteReceived(uint8_t data){
                 packetPayload=nullptr;
 
                 if (errorOccurred){
-                    Client.stop();
-                    netStatus=NETSTATUS::NOTHING;
+                    errorOccured("Error occured decrypting payload");
                 }else{
                     packetRecieved(recvdHandshake, plainText, decryptedLength);
                 }

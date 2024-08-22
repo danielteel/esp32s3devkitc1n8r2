@@ -9,7 +9,7 @@
 const char *WiFiSSID = SECRET_WIFI_SSID;
 const char *WiFiPass = SECRET_WIFI_PASS;
 
-Net NetClient("device1", "", "192.168.1.14", 4004);
+Net NetClient("device1", SECRET_ENCROKEY, "192.168.50.178", 4004);
 
 void setup(){
     Serial.begin(115200);
@@ -21,6 +21,7 @@ void setup(){
 
 void loop(){
     static uint32_t lastPrintTime = 0;
+    static uint32_t lastSendTime=0;
 
     if (WiFi.status() != WL_CONNECTED){//Reconnect to WiFi
         if (WiFi.status() == WL_CONNECT_FAILED){
@@ -32,10 +33,12 @@ void loop(){
         delay(500);
     }else{
 
-        if (isTimeToExecute(lastPrintTime, 1000)){
-            Serial.println(millis());
+        NetClient.loop();
+        if (NetClient.netStatus==NETSTATUS::READY && isTimeToExecute(lastSendTime, 1000)){
+            String msg = "ms: ";
+            msg+=millis();
+            NetClient.sendString(msg);
         }
     }
 
-    NetClient.loop();
 }
