@@ -71,4 +71,8 @@ class Net {
         void packetRecieved(uint32_t recvdHandshake, uint8_t* data, uint32_t dataLength);
         void processIncoming();
 
+
+        uint8_t* lastData=nullptr;
+        uint32_t lastDataLength=0;
+
 };

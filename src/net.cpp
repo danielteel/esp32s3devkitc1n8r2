@@ -90,10 +90,33 @@ void Net::packetRecieved(uint32_t recvdHandshake, uint8_t* data, uint32_t dataLe
     }else if (netStatus==NETSTATUS::READY){
         if (recvdHandshake==serversHandshake){
             serversHandshake++;
+
+            //Added for debugging
+            if (lastData){//
+                free(lastData);//
+                lastData=nullptr;//
+            }//
+            lastData=(uint8_t*)malloc(dataLength);//
+            lastDataLength=dataLength;//
+            memmove(lastData, data, dataLength);//
+            //End Added for Debugging
+
         }else{
             //throw error, wrong handshake from expected
             String errorText="Wrong handshake, expected ";
             errorText+=String(serversHandshake)+" but recvd "+String(recvdHandshake);
+
+
+            //Added for Debugging
+            if (lastData){//
+                Serial.print("Last data was:");//
+                Serial.println(String((const char*)lastData, lastDataLength));//
+                free(lastData);//
+                lastData=nullptr;//
+            }//
+            Serial.print("Current data is:");//
+            Serial.println(String((const char*)data, dataLength));//
+            //End Added for Debugging
 
             errorOccured(errorText);
             return;
