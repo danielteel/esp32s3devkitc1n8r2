@@ -1,5 +1,5 @@
 #pragma once
-#include <WiFi.h>
+#include <WiFiClient.h>
 #include "LinkedList.h"
 
 enum NETSTATUS {
@@ -55,9 +55,4 @@ class Net {
         void byteReceived(uint8_t data);
         void packetRecieved(uint32_t recvdHandshake, uint8_t* data, uint32_t dataLength);
         void processIncoming();
-
-
-        uint8_t* lastData=nullptr;
-        uint32_t lastDataLength=0;
-
 };

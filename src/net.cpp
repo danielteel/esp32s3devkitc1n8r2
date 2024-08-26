@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <WiFi.h>
 #include <Esp.h>
 #include "encro.h"
 #include "net.h"
@@ -38,11 +37,12 @@ void Net::errorOccured(String errorText){
 
 void Net::attemptToConnect(){
     if (!this->Client.connected()){
-        
         this->netStatus=NETSTATUS::NOTHING;
         this->recvState=RECVSTATE::LEN1;
         if (isTimeToExecute(this->lastConnectAttempt, connectAttemptInterval)){
+            Serial.println("Attempting to connect to server...");
             if (this->Client.connect(this->hostAddress.c_str(), this->port)){
+                delay(1000);
                 this->clientsHandshake=esp_random();
 
                 this->Client.write((uint8_t)this->deviceName.length());
@@ -72,11 +72,12 @@ bool Net::connected(){
 bool Net::sendPacket(uint8_t* data, uint32_t dataLength){
     uint32_t encryptedLength;
     uint8_t* encrypted=encrypt(this->clientsHandshake, data, dataLength, encryptedLength, this->encroKey);
-    this->clientsHandshake++;
     if (encrypted){
+        this->clientsHandshake++;
         this->Client.write((uint8_t*)&encryptedLength, 4);
         this->Client.write(encrypted, encryptedLength);
-        this->Client.flush();
+        delete[] encrypted;
+        encrypted=nullptr;
         return true;
     }
     return false;
@@ -89,34 +90,10 @@ void Net::packetRecieved(uint32_t recvdHandshake, uint8_t* data, uint32_t dataLe
     }else if (netStatus==NETSTATUS::READY){
         if (recvdHandshake==serversHandshake){
             serversHandshake++;
-
-            //Added for debugging
-            if (lastData){//
-                free(lastData);//
-                lastData=nullptr;//
-            }//
-            lastData=(uint8_t*)malloc(dataLength);//
-            lastDataLength=dataLength;//
-            memmove(lastData, data, dataLength);//
-            //End Added for Debugging
-
         }else{
             //throw error, wrong handshake from expected
             String errorText="Wrong handshake, expected ";
             errorText+=String(serversHandshake)+" but recvd "+String(recvdHandshake);
-
-
-            //Added for Debugging
-            if (lastData){//
-                Serial.print("Last data was:");//
-                Serial.println(String((const char*)lastData, lastDataLength));//
-                free(lastData);//
-                lastData=nullptr;//
-            }//
-            Serial.print("Current data is:");//
-            Serial.println(String((const char*)data, dataLength));//
-            //End Added for Debugging
-
             errorOccured(errorText);
             return;
         }
@@ -151,6 +128,9 @@ void Net::byteReceived(uint8_t data){
             }else{
                 recvState=RECVSTATE::PAYLOAD;
                 packetPayload=(uint8_t*)malloc(packetLength);
+                if (!packetPayload){
+                    errorOccured("Failed to allocate packet payload space");
+                }
             }
             break;
         case RECVSTATE::PAYLOAD:
@@ -179,10 +159,8 @@ void Net::byteReceived(uint8_t data){
 }
 
 void Net::processIncoming(){
-    if (this->Client.connected()){
-        while (Client.available()>0){
-            this->byteReceived(this->Client.read());
-        }
+    while (this->Client.connected() && Client.available()>0){
+        this->byteReceived(this->Client.read());
     }
 }
 
