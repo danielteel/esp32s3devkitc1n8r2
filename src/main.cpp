@@ -44,7 +44,7 @@ void loop(){
     }else{
 
         NetClient.loop();
-        if (NetClient.connected() && isTimeToExecute(lastSendTime, 125)){
+        if (NetClient.connected() && isTimeToExecute(lastSendTime, 75)){
             String msg = "count: ";
             msg+=sendCount;
             NetClient.sendString(msg);

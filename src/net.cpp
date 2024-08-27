@@ -76,7 +76,7 @@ bool Net::sendPacket(uint8_t* data, uint32_t dataLength){
         this->clientsHandshake++;
         this->Client.write((uint8_t*)&encryptedLength, 4);
         this->Client.write(encrypted, encryptedLength);
-        delete[] encrypted;
+        free(encrypted);
         encrypted=nullptr;
         return true;
     }
@@ -142,17 +142,16 @@ void Net::byteReceived(uint8_t data){
                 uint32_t decryptedLength=0;
                 bool errorOccurred=false;
                 uint8_t* plainText=decrypt(recvdHandshake, packetPayload, packetLength, decryptedLength, encroKey, errorOccurred);
-                free(packetPayload);
-                packetPayload=nullptr;
 
                 if (errorOccurred){
                     errorOccured("Error occured decrypting payload");
                 }else{
                     packetRecieved(recvdHandshake, plainText, decryptedLength);
                 }
-
-                if (plainText) delete[] plainText;
-                plainText=nullptr;
+                if (packetPayload){
+                    free(packetPayload);
+                    packetPayload=nullptr;
+                }
             }
             break;
     }
