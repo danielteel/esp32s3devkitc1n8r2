@@ -37,12 +37,16 @@ void Net::errorOccured(String errorText){
 
 void Net::attemptToConnect(){
     if (!this->Client.connected()){
+        if (wasConnected){
+            wasConnected=false;
+            if (onDisconnected) onDisconnected();
+        }
         this->netStatus=NETSTATUS::NOTHING;
         this->recvState=RECVSTATE::LEN1;
         if (isTimeToExecute(this->lastConnectAttempt, connectAttemptInterval)){
             Serial.println("Attempting to connect to server...");
             if (this->Client.connect(this->hostAddress.c_str(), this->port)){
-                delay(1000);
+                delay(500);
                 this->clientsHandshake=esp_random();
 
                 this->Client.write((uint8_t)this->deviceName.length());
@@ -57,6 +61,17 @@ void Net::attemptToConnect(){
     }
 }
 
+void Net::setPacketReceivedCallback(void (*callback)(uint8_t*, uint32_t)){
+    packetReceived=callback;
+}
+
+void Net::setOnConnected(void (*callback)(void)){
+    onConnected=callback;
+}
+void Net::setOnDisconnected(void (*callback)(void)){
+    onDisconnected=callback;
+}
+
 bool Net::sendString(String str){
     return sendPacket((uint8_t*)str.c_str(), str.length());
 }
@@ -65,8 +80,8 @@ bool Net::sendBinary(uint8_t* data, uint32_t dataLength){
     return sendPacket(data, dataLength);
 }
 
-bool Net::connected(){
-    return netStatus==NETSTATUS::READY;
+bool Net::ready(){
+    return (netStatus==NETSTATUS::READY) && Client.connected();
 }
 
 bool Net::sendPacket(uint8_t* data, uint32_t dataLength){
@@ -87,9 +102,13 @@ void Net::packetRecieved(uint32_t recvdHandshake, uint8_t* data, uint32_t dataLe
     if (netStatus==NETSTATUS::INITIAL_SENT){
             serversHandshake=recvdHandshake+1;
             netStatus=NETSTATUS::READY;
+            wasConnected=true;
+            if (onConnected) onConnected();
+
     }else if (netStatus==NETSTATUS::READY){
         if (recvdHandshake==serversHandshake){
             serversHandshake++;
+            if (packetReceived) packetReceived(data, dataLength);
         }else{
             //throw error, wrong handshake from expected
             String errorText="Wrong handshake, expected ";
@@ -98,7 +117,7 @@ void Net::packetRecieved(uint32_t recvdHandshake, uint8_t* data, uint32_t dataLe
             return;
         }
     }else{
-            errorOccured("Unknown netStatus");
+        errorOccured("Unknown netStatus");
     }
 }
 
@@ -154,6 +173,10 @@ void Net::byteReceived(uint8_t data){
                 }
             }
             break;
+        default:
+            errorOccured("Unknown recvState");
+            break;
+
     }
 }
 

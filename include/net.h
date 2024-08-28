@@ -26,7 +26,11 @@ class Net {
         bool sendString(String str);
         bool sendBinary(uint8_t* data, uint32_t dataLen);
         
-        bool connected();
+        bool ready();
+        
+        void setPacketReceivedCallback(void (*packetReceivedCallback)(uint8_t*, uint32_t));
+        void setOnConnected(void (*onConnected)(void));
+        void setOnDisconnected(void (*onDisconnected)(void));
 
     private:
         WiFiClient Client;
@@ -44,11 +48,16 @@ class Net {
         uint8_t* packetPayload=nullptr;
         uint32_t payloadRecvdCount=0;
 
-        void (*published)(String name, String payload)=nullptr;
-
-    private:
         const uint32_t connectAttemptInterval=2000;
         uint32_t lastConnectAttempt=0;
+
+        bool wasConnected=false;
+
+        void (*packetReceived)(uint8_t* data, uint32_t dataLength)=nullptr;
+        void (*onConnected)()=nullptr;
+        void (*onDisconnected)()=nullptr;
+
+    private:
         void errorOccured(String errorText);
         void attemptToConnect();
         bool sendPacket(uint8_t* data, uint32_t dataLength);
