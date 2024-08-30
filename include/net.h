@@ -21,7 +21,7 @@ class Net {
     public:
         Net(String deviceName, String encroKey, String address, uint16_t port);
         ~Net();
-        void loop();
+        bool loop();
 
         bool sendString(String str);
         bool sendBinary(uint8_t* data, uint32_t dataLen);

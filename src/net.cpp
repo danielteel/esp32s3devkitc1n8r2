@@ -186,7 +186,8 @@ void Net::processIncoming(){
     }
 }
 
-void Net::loop(){
+bool Net::loop(){
     this->attemptToConnect();
     this->processIncoming();
+    return ready();
 }
