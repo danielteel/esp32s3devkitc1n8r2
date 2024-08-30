@@ -44,19 +44,22 @@ void setup(){
     NetClient.setPacketReceivedCallback(&packetReceived);
     NetClient.setOnConnected(&onConnected);
     NetClient.setOnDisconnected(&onDisconnected);
+    Serial.print("PSRAM Size:");
+    Serial.println(ESP.getPsramSize());
 }
 
 
 void loop(){
     static uint32_t lastPrintTime = 0;
 
-    if (isTimeToExecute(lastPrintTime, 10000)){
+    if (isTimeToExecute(lastPrintTime, 3000)){
         Serial.print("Free heap:");
         Serial.println(esp_get_free_heap_size());
         Serial.print("Connected:");
         Serial.println(NetClient.ready());
         Serial.print("Status:");
         Serial.println(WiFi.status());
+        NetClient.sendString(String("Temp:")+String(temperatureRead()));
     }
 
     if (WiFi.status() != WL_CONNECTED){//Reconnect to WiFi
@@ -68,8 +71,9 @@ void loop(){
         Serial.println("Trying to connect to WiFi..."+String(millis()));
         Serial.println(WiFi.status());
         delay(1000);
-    }else{
-        NetClient.loop();
     }
+    
+
+    NetClient.loop();
 
 }
