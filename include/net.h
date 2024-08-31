@@ -1,6 +1,5 @@
 #pragma once
 #include <WiFiClient.h>
-#include "LinkedList.h"
 
 enum NETSTATUS {
     NOTHING,
