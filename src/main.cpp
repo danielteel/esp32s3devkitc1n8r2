@@ -9,6 +9,7 @@
 #include <Wire.h>
 #include <SPI.h>
 #include <Adafruit_BME280.h>
+#include "HX711.h"
 
 const char *WiFiSSID = SECRET_WIFI_SSID;
 const char *WiFiPass = SECRET_WIFI_PASS;
@@ -19,6 +20,7 @@ Net NetClient("device1", SECRET_ENCROKEY, "192.168.50.178", 4004);
 //DHTesp dhtSensor1;
 Adafruit_BME280 bme; // use I2C interface
 
+HX711 scale;
 
 void packetReceived(uint8_t* data, uint32_t dataLength){
     Serial.print("NetClient recieved:");
@@ -60,6 +62,8 @@ void setup(){
                     Adafruit_BME280::SAMPLING_X1, // humidity
                     Adafruit_BME280::FILTER_OFF   );
   
+    scale.begin(12, 11);
+    scale.tare();
 }
 
 
@@ -85,7 +89,7 @@ void loop(){
             // NetClient.sendString(String("T1: ")+String(dhtSensor1.getTemperature()));
             // NetClient.sendString(String("H1: ")+String(dhtSensor1.getHumidity()));
             bme.takeForcedMeasurement();
-            NetClient.sendString(String(millis())+","+String(bme.readTemperature())+String(",")+String(bme.readHumidity())+String(",")+String(bme.readPressure())+String(",")+String(bme.readAltitude(SENSORS_PRESSURE_SEALEVELHPA)));
+            NetClient.sendString(String(millis())+","+String(bme.readTemperature())+String(",")+String(bme.readHumidity())+String(",")+String(bme.readPressure())+String(",")+String(bme.readAltitude(SENSORS_PRESSURE_SEALEVELHPA))+String(",")+String(scale.get_units()));
         }
     }
 }
